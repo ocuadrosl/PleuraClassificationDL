@@ -5,6 +5,7 @@ import tensorflow as tf
 from tensorflow import keras
 import time
 import matplotlib.pyplot as plt
+from random import sample
 
 
 def process_images(image, label):
@@ -23,9 +24,10 @@ def LoadSet(inputDir, targetSet, size):
         image = cv2.imread(inputDir + '/' + targetSet + '/' + imageName, cv2.IMREAD_COLOR)
         images.append(image)
         count += 1
-        if count >= size:
-            break
-    return images
+        #if count >= size:
+        #    break
+
+    return sample(images, size)
 
 
 def SplitTrainValidationTest(pleura, nonPleura, trainRate, validationRate, testRate):
