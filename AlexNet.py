@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
     # load sambles pleura and non pleura
 
-    samplesSize = 5000  # for pleura and non_pleura
+    samplesSize = 4000  # for pleura and non_pleura
 
     pleura = LoadSet(inputDir, "pleura", samplesSize)
     nonPleura = LoadSet(inputDir, "non_pleura", samplesSize)
