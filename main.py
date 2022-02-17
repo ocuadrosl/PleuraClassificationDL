@@ -53,7 +53,7 @@ def CreateDataSet():
 if __name__ == "__main__":
 
     inputDir = "/home/oscar/data/biopsy/dataset_3"
-    outputDir = "/home/oscar/data/biopsy/dataset_3/gray-scale/slices_227_RGB"
+    outputDir = "/home/oscar/data/biopsy/dataset_3/slices_227_RGB"
     boundaryDataSet = "erode_radius_30"
     targetSet = 'test'
     dataset = pd.DataFrame()

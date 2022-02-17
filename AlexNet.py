@@ -5,8 +5,11 @@ import tensorflow as tf
 from tensorflow import keras
 import time
 import matplotlib.pyplot as plt
-from random import sample
+from random import choices
 
+import LoadDataset as ld
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 def process_images(image, label):
     # Normalize images to have a mean of 0 and standard deviation of 1
@@ -16,57 +19,61 @@ def process_images(image, label):
     return image, label
 
 
-def LoadSet(inputDir, targetSet, size):
-    count = 0
-    images = []
-    for imageName in os.listdir(inputDir + '/' + targetSet):
-        # print(imageName)
-        image = cv2.imread(inputDir + '/' + targetSet + '/' + imageName, cv2.IMREAD_COLOR)
-        images.append(image)
-        count += 1
-        #if count >= size:
-        #    break
+# def LoadSet(inputDir, targetSet, size):
+#     '''
+#     Load "size" number of elementes randomly
+#     '''
+#     count = 0
+#     images = []
+#     for imageName in os.listdir(inputDir + '/' + targetSet):
+#         #print(imageName)
+#         image = cv2.imread(inputDir + '/' + targetSet + '/' + imageName, cv2.IMREAD_COLOR)
+#         images.append(image)
+#         count += 1
+#         #if count >= size:
+#         #    break
 
-    return sample(images, size)
+#     #return sample(images, size)
+#     return choices(images, k=size)
 
 
-def SplitTrainValidationTest(pleura, nonPleura, trainRate, validationRate, testRate):
-    samplesSize = len(pleura)
+# def SplitTrainValidationTest(pleura, nonPleura, trainRate, validationRate, testRate):
+#     samplesSize = len(pleura)
 
-    trainIndex = int(trainRate * samplesSize)
-    validationIndex = trainIndex + int(validationRate * samplesSize)
+#     trainIndex = int(trainRate * samplesSize)
+#     validationIndex = trainIndex + int(validationRate * samplesSize)
 
-    trainSet = pleura[:trainIndex] + nonPleura[:trainIndex]
-    trainLabels = np.hstack((np.zeros(trainIndex, dtype=np.int8), np.ones(trainIndex, dtype=np.int8)))
+#     trainSet = pleura[:trainIndex] + nonPleura[:trainIndex]
+#     trainLabels = np.hstack((np.zeros(trainIndex, dtype=np.int8), np.ones(trainIndex, dtype=np.int8)))
 
-    validationSet = pleura[trainIndex: validationIndex] + nonPleura[trainIndex:validationIndex]
-    validationLabels = np.hstack(
-        (np.zeros(validationIndex - trainIndex, dtype=np.int8), np.ones(validationIndex - trainIndex, dtype=np.int8)))
-    print(len(validationLabels), len(validationSet))
+#     validationSet = pleura[trainIndex: validationIndex] + nonPleura[trainIndex:validationIndex]
+#     validationLabels = np.hstack(
+#         (np.zeros(validationIndex - trainIndex, dtype=np.int8), np.ones(validationIndex - trainIndex, dtype=np.int8)))
+#     print(len(validationLabels), len(validationSet))
 
-    testSet = pleura[validationIndex:] + nonPleura[validationIndex:]
-    testLabels = np.hstack(
-        (np.zeros(samplesSize - validationIndex, dtype=np.int8), np.ones(samplesSize - validationIndex, dtype=np.int8)))
-    print(len(testLabels), len(testSet))
+#     testSet = pleura[validationIndex:] + nonPleura[validationIndex:]
+#     testLabels = np.hstack(
+#         (np.zeros(samplesSize - validationIndex, dtype=np.int8), np.ones(samplesSize - validationIndex, dtype=np.int8)))
+#     print(len(testLabels), len(testSet))
 
-    return trainSet, validationSet, testSet, trainLabels, validationLabels, testLabels
+#     return trainSet, validationSet, testSet, trainLabels, validationLabels, testLabels
 
 
 if __name__ == "__main__":
 
-    inputDir = "/home/oscar/data/biopsy/dataset_3/gray-scale/slices_227_RGB"
+    inputDir = "/home/oscar/data/biopsy/dataset_3/slices_227_RGB"
 
     CLASS_NAMES = ['pleura', 'non_pleura']
 
-    # load sambles pleura and non pleura
+    # load samples pleura and non pleura
 
-    samplesSize = 4000  # for pleura and non_pleura
+    samplesSize = 4000 #4000  # for pleura and non_pleura
 
-    pleura = LoadSet(inputDir, "pleura", samplesSize)
-    nonPleura = LoadSet(inputDir, "non_pleura", samplesSize)
+    pleura = ld.LoadSet(inputDir, "pleura", samplesSize)
+    nonPleura = ld.LoadSet(inputDir, "non_pleura", samplesSize)
 
     trainSet, validationSet, testSet, \
-    trainLabels, validationLabels, testLabels = SplitTrainValidationTest(pleura, nonPleura, 0.70, 0.15, 0.15)
+    trainLabels, validationLabels, testLabels = ld.SplitTrainValidationTest(pleura, nonPleura, 0.70, 0.15, 0.15)
 
     train_ds = tf.data.Dataset.from_tensor_slices((trainSet, trainLabels))
     validation_ds = tf.data.Dataset.from_tensor_slices((validationSet, validationLabels))
@@ -125,21 +132,21 @@ if __name__ == "__main__":
     ])
     model.add(tf.keras.layers.Masking(mask_value=0., input_shape=(227, 227, 3)))
 
-root_logdir = os.path.join(os.curdir, "logs")
-
-
-def get_run_logdir():
-    run_id = time.strftime("run_%Y_%m_%d-%H_%M_%S")
-    return os.path.join(root_logdir, run_id)
-
-
-run_logdir = get_run_logdir()
-tensorboard_cb = keras.callbacks.TensorBoard(run_logdir)
-
-model.compile(loss='sparse_categorical_crossentropy', optimizer=tf.optimizers.SGD(learning_rate=0.001),
-              metrics=['accuracy'])
-model.summary()
-
-model.fit(train_ds, epochs=50, validation_data=validation_ds, validation_freq=1, callbacks=[tensorboard_cb])
-
-model.evaluate(test_ds)
+    root_logdir = os.path.join(os.curdir, "logs")
+    
+    
+    def get_run_logdir():
+        run_id = time.strftime("run_%Y_%m_%d-%H_%M_%S")
+        return os.path.join(root_logdir, run_id)
+    
+    
+    run_logdir = get_run_logdir()
+    tensorboard_cb = keras.callbacks.TensorBoard(run_logdir)
+    
+    model.compile(loss='sparse_categorical_crossentropy', optimizer=tf.optimizers.SGD(learning_rate=0.001),
+                  metrics=['accuracy'])
+    model.summary()
+    
+    model.fit(train_ds, epochs=50, validation_data=validation_ds, validation_freq=1, callbacks=[tensorboard_cb])
+    
+    model.evaluate(test_ds)
